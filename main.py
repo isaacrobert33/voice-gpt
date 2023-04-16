@@ -1,26 +1,13 @@
-import openai
 import os
 import speech_recognition as sr
 from dotenv import load_dotenv
+from utils import fetch_response, listen_to_speech, recognize_speech, speak_text
 
 load_dotenv()
 
-openai.api_key = os.environ["OPENAI_API_KEY"]
+API_KEY = os.environ["OPENAI_API_KEY"]
+model = "text-davinci-002"
 r, mic = None, None
-
-
-def fetch_response(prompt):
-    model = "text-davinci-002"
-    response = openai.Completion.create(
-        engine=model,
-        prompt=prompt,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.5,
-    )
-
-    return response.choices[0].text
 
 
 def initialize_sr():
@@ -29,18 +16,19 @@ def initialize_sr():
     mic = sr.Microphone()
 
 
-def listen_to_speech():
-    with mic as source:
-        r.adjust_for_ambient_noise(source)
-        audio = r.listen(source)
-
-    return audio
-
-
-def recognize_speech(audio):
-    text = r.recognize_google(audio)
-
-    return text
+initialize_sr()
+print("[*] Listening to speech...")
+audio = listen_to_speech(mic=mic, r=r)
+print("[*] Running speech recognition on speech...")
+try:
+    prompt = recognize_speech(r, audio=audio)
+except:
+    print("Error recognizing speech")
+print(f"[*] Fetching response to prompt ({prompt})...")
+response = fetch_response(API_KEY, model, prompt=prompt)
+print("[*] Running speech syntheis for response")
+print(response)
+# speak_text(response)
 
 
 prompt = "State thevenin's theorem"
